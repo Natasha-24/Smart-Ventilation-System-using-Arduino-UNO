@@ -1,1 +1,86 @@
 
+
+#include <LiquidCrystal.h>
+
+// LCD pins: RS, E, D4, D5, D6, D7
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+// Component pins
+const int gasSensorPin = A0;
+const int greenLedPin  = 6;
+const int redLedPin    = 7;
+const int buzzerPin    = 8;
+const int fanPin       = 9;
+
+// Initial example thresholds (0-1023)
+const int gasThreshold  = 140;
+const int safeThreshold = 100;
+
+bool gasDetected = false;
+
+void setup() {
+  pinMode(greenLedPin, OUTPUT);
+  pinMode(redLedPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(fanPin, OUTPUT);
+
+  digitalWrite(fanPin, LOW);
+  noTone(buzzerPin);
+
+  Serial.begin(9600);
+
+  // Initialize 16 columns and 2 rows
+  lcd.begin(16, 2);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Smart Ventilation");
+  lcd.setCursor(0, 1);
+  lcd.print("Initializing...");
+  delay(3000);
+  lcd.clear();
+}
+
+void loop() {
+  int gasValue = analogRead(gasSensorPin);
+
+  // Alarm activation and reset thresholds
+  if (gasValue >= gasThreshold) {
+    gasDetected = true;
+  } 
+  else if (gasValue <= safeThreshold) {
+    gasDetected = false;
+  }
+
+  Serial.print("Gas reading: ");
+  Serial.println(gasValue);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Gas value: ");
+  lcd.print(gasValue);
+  lcd.print("    ");
+
+  if (gasDetected) {
+    // Gas detected
+    digitalWrite(greenLedPin, LOW);
+    digitalWrite(redLedPin, HIGH);
+
+    digitalWrite(fanPin, HIGH);
+    tone(buzzerPin, 2000);
+
+    lcd.setCursor(0, 1);
+    lcd.print("GAS ALERT! FAN ON");
+  } 
+  else {
+    // Normal air reading
+    digitalWrite(greenLedPin, HIGH);
+    digitalWrite(redLedPin, LOW);
+
+    digitalWrite(fanPin, LOW);
+    noTone(buzzerPin);
+
+    lcd.setCursor(0, 1);
+    lcd.print("Air Status: SAFE");
+  }
+
+  delay(300);
+}
